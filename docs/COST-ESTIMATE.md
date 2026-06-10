@@ -1,5 +1,4 @@
 # AWS Cost Estimate
-
 ## Baseline
 
 EC2: $120
