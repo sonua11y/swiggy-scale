@@ -1,4 +1,6 @@
-# ARCHITECTURE
+# ARCHITECTURE.md
+
+# Architecture Redesign
 
 ## Current Architecture
 
@@ -6,7 +8,7 @@ Users
 → Node.js
 → PostgreSQL
 
-Problems:
+Weaknesses:
 
 * Single point of failure
 * No cache
@@ -20,7 +22,7 @@ Problems:
 Users
 → CloudFront CDN
 → Application Load Balancer
-→ Node.js Instances
+→ Node.js Auto Scaling Group
 → Redis Cache
 → PgBouncer
 → PostgreSQL Primary
@@ -29,20 +31,21 @@ PostgreSQL Primary
 → Read Replica 1
 → Read Replica 2
 
-SQS
+SQS Queue
 → Payment Workers
 
 ---
 
-## Component Justification
+## Component Justification Table
 
-| Component       | Failure It Prevents  | How                                       |
-| --------------- | -------------------- | ----------------------------------------- |
-| CloudFront CDN  | Failure 5            | Serves images from edge                   |
-| ALB             | Single point failure | Distributes traffic                       |
-| Redis Cache     | Failure 1            | Reduces DB reads                          |
-| Redis SETNX     | Failure 4            | Atomic promo updates                      |
-| PgBouncer       | Failure 1            | Reuses DB connections                     |
-| Read Replicas   | Read bottleneck      | Separates reads and writes                |
-| SQS Queue       | Failure 3            | Async payment processing                  |
-| Payment Workers | Failure 3            | Removes payment latency from request path |
+| Component          | Failure Prevented                | How                                           |
+| ------------------ | -------------------------------- | --------------------------------------------- |
+| CloudFront CDN     | Failure 5: NIC Saturation        | Static assets served from edge locations      |
+| ALB                | Single Point of Failure          | Traffic distributed across multiple instances |
+| Auto Scaling Group | Failure 2: Node.js Saturation    | Adds instances automatically                  |
+| Redis Cache        | Failure 1: PostgreSQL Exhaustion | Reduces DB reads by 80%                       |
+| Redis SETNX        | Failure 4: Promo Race Condition  | Atomic promo updates                          |
+| PgBouncer          | Failure 1: PostgreSQL Exhaustion | Reuses database connections                   |
+| Read Replicas      | Read Bottleneck                  | Separates reads and writes                    |
+| SQS Queue          | Failure 3: Payment Amplification | Makes payments asynchronous                   |
+| Payment Workers    | Failure 3: Payment Amplification | Processes payments outside request path       |
