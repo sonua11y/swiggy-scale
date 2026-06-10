@@ -1,49 +1,132 @@
+# RUNBOOK.md
+
 # Incident Runbook
 
-## Step 1 - Detect
+## STEP 1 - DETECT
 
-- ALB 5xx > 5%
-- DB Connections > 80%
-- CPU > 80%
-- Redis Memory > 75%
-- SQS Depth > 10000
-- P99 Latency > 2s
+Alert Thresholds
 
-## Step 2 - Triage
+* ALB 5xx > 5% (Critical)
+* PostgreSQL Connections > 80% (Warning)
+* CPU > 80% (Warning)
+* Redis Memory > 75% (Warning)
+* SQS Queue Depth > 10,000 (Warning)
+* P99 Latency > 2 seconds (Critical)
 
-Check DB
-→ If red = DB issue
+---
 
-Check CPU
-→ If red = Compute issue
+## STEP 2 - TRIAGE
 
-Check Redis
-→ If red = Cache issue
+1. Check PostgreSQL Connections.
 
-Check SQS
-→ If red = Queue issue
+If red:
+Go to Step 3A.
 
-## Step 3 - Respond
+2. Check CPU Utilization.
 
-DB issue → Scale DB/PgBouncer
+If red:
+Go to Step 3B.
 
-CPU issue → Add instances
+3. Check Redis Cache Miss Rate.
 
-Queue issue → Restart workers
+If red:
+Go to Step 3C.
 
-Redis issue → Warm cache
+4. Check SQS Queue Depth.
 
-## Step 4 - Rollback
+If red:
+Go to Step 3D.
 
-aws ecs update-service \
---cluster swiggy-prod \
---service api \
---task-definition PREVIOUS_VERSION
+---
 
-## Step 5 - Postmortem
+## STEP 3A - DB Pool Exhaustion
+
+Command:
+
+aws rds describe-db-instances
+
+Action:
+
+* Scale RDS if required
+* Restart PgBouncer
+
+Success:
+
+Connections below 80%.
+
+---
+
+## STEP 3B - Compute Saturation
+
+Command:
+
+aws autoscaling set-desired-capacity 
+--auto-scaling-group-name swift-api 
+--desired-capacity 10
+
+Success:
+
+CPU below 70%.
+
+---
+
+## STEP 3C - Redis Cache Issue
+
+Action:
+
+* Warm cache
+* Verify Redis cluster health
+
+Success:
+
+Cache hit ratio improves.
+
+---
+
+## STEP 3D - Payment Queue Backup
+
+Action:
+
+* Restart payment workers
+* Drain SQS backlog
+
+Success:
+
+Queue depth decreasing.
+
+---
+
+## STEP 4 - ROLLBACK
+
+Rollback Command
+
+aws ecs update-service 
+--cluster swift-prod 
+--service api 
+--task-definition PREVIOUS_STABLE_VERSION
+
+Warning:
+
+Never rollback database schema.
+
+Rollback application code only.
+
+---
+
+## STEP 5 - POSTMORTEM
+
+Template
 
 Timeline
+
 Root Cause
+
 Impact
+
 What Worked
+
 Action Items
+
+Owner
+
+Due Date
