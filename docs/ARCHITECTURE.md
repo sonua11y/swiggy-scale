@@ -34,15 +34,16 @@ SQS
 
 ---
 
-## Component Justification
+## Component Justification Table
 
-| Component       | Failure It Prevents  | How                                       |
-| --------------- | -------------------- | ----------------------------------------- |
-| CloudFront CDN  | Failure 5            | Serves images from edge                   |
-| ALB             | Single point failure | Distributes traffic                       |
-| Redis Cache     | Failure 1            | Reduces DB reads                          |
-| Redis SETNX     | Failure 4            | Atomic promo updates                      |
-| PgBouncer       | Failure 1            | Reuses DB connections                     |
-| Read Replicas   | Read bottleneck      | Separates reads and writes                |
-| SQS Queue       | Failure 3            | Async payment processing                  |
-| Payment Workers | Failure 3            | Removes payment latency from request path |
+| Component                 | Failure Prevented                     | How It Prevents It                                       |
+| ------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| CloudFront CDN            | Failure 5: NIC Saturation             | Images are served from edge locations instead of Node.js |
+| Application Load Balancer | Single Point of Failure               | Routes traffic across multiple instances                 |
+| Redis Cache               | Failure 1: PostgreSQL Pool Exhaustion | Reduces database reads by caching menus                  |
+| Redis SETNX               | Failure 4: Promo Race Condition       | Makes promo updates atomic                               |
+| PgBouncer                 | Failure 1: PostgreSQL Pool Exhaustion | Reuses database connections efficiently                  |
+| Read Replicas             | Read Bottleneck                       | Separates read traffic from write traffic                |
+| SQS Queue                 | Failure 3: Payment Call Amplification | Removes payment processing from request path             |
+| Payment Workers           | Failure 3: Payment Call Amplification | Processes payments asynchronously                        |
+| Auto Scaling Group        | Failure 2: Node.js Saturation         | Adds more Node.js instances when CPU increases           |
